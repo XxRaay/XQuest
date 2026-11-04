@@ -4,7 +4,11 @@ import fs from 'fs';
 import { processManager, QuestPreset, WindowMode } from './processManager';
 
 let mainWindow: BrowserWindow | null = null;
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Ensure Windows Taskbar uses XQuest identity and custom icon
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.xxraay.xquest');
+}
 
 function getCustomPresetsPath(): string {
   return path.join(app.getPath('userData'), 'custom_presets.json');
@@ -32,7 +36,21 @@ function saveSavedPresets(presets: QuestPreset[]): void {
   }
 }
 
+function getAppIcon(): string {
+  const candidates = [
+    path.join(__dirname, '../public/icon.ico'),
+    path.join(__dirname, '../dist/icon.ico'),
+    path.join(__dirname, '../public/icon.png'),
+    path.join(__dirname, '../dist/icon.png'),
+    path.join(process.cwd(), 'public/icon.ico'),
+    path.join(process.cwd(), 'public/icon.png'),
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || '';
+}
+
 function createWindow(): void {
+  const iconPath = getAppIcon();
+
   mainWindow = new BrowserWindow({
     width: 1080,
     height: 780,
@@ -41,6 +59,7 @@ function createWindow(): void {
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#06070a',
+    icon: iconPath || undefined,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -60,11 +79,14 @@ function createWindow(): void {
     }
   });
 
-  if (isDev) {
-    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
-    mainWindow.loadURL(devUrl);
+  const distHtml = path.join(__dirname, '../dist/index.html');
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else if (fs.existsSync(distHtml)) {
+    mainWindow.loadFile(distHtml);
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadURL('http://localhost:5173');
   }
 
   mainWindow.on('closed', () => {
