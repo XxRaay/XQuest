@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveCustomPreset: (preset: unknown) => ipcRenderer.invoke('emulator:save-custom-preset', preset),
   deleteCustomPreset: (id: string) => ipcRenderer.invoke('emulator:delete-custom-preset', id),
   openStubWindow: () => ipcRenderer.invoke('emulator:open-stub-window'),
+  selectExeFile: () => ipcRenderer.invoke('dialog:select-exe'),
+  getRunningProcesses: () => ipcRenderer.invoke('system:get-running-processes'),
 
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),

@@ -194,6 +194,7 @@ export const App: React.FC = () => {
         <ActiveEmulationCard
           state={state}
           selectedPreset={selectedPreset}
+          onSelectPreset={setSelectedPreset}
           windowMode={windowMode}
           onWindowModeChange={setWindowMode}
           durationMinutes={durationMinutes}
@@ -205,6 +206,7 @@ export const App: React.FC = () => {
           onStart={handleStart}
           onStop={handleStop}
           onOpenWindow={handleOpenWindow}
+          onSaveToPresets={handleSaveCustomPreset}
         />
 
         {/* Presets & Custom Games Library */}

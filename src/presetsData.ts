@@ -112,6 +112,15 @@ export const DEFAULT_PRESETS: QuestPreset[] = [
     discordAppId: '809794017000000000',
   },
   {
+    id: 'firefox',
+    name: 'Mozilla Firefox',
+    executable: 'firefox.exe, firefox-bin.exe',
+    windowTitle: 'Mozilla Firefox',
+    category: 'browser',
+    description: 'Квесты на использование браузера Firefox (запускает оба алиаса).',
+    rewardHint: 'Партнёрские награды и декор',
+  },
+  {
     id: 'chrome',
     name: 'Google Chrome',
     executable: 'chrome.exe',

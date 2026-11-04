@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { processManager, QuestPreset, WindowMode } from './processManager';
 
 let mainWindow: BrowserWindow | null = null;
@@ -155,6 +156,42 @@ ipcMain.handle('emulator:delete-custom-preset', (_event, id: string) => {
 ipcMain.handle('emulator:open-stub-window', () => {
   // Focus dummy window if running
   return { success: true };
+});
+
+ipcMain.handle('dialog:select-exe', async () => {
+  if (!mainWindow) return { canceled: true };
+  const res = await dialog.showOpenDialog(mainWindow, {
+    title: 'Выберите исполняемый файл (.exe) для квеста',
+    properties: ['openFile'],
+    filters: [{ name: 'Исполняемые файлы (*.exe)', extensions: ['exe'] }],
+  });
+
+  if (res.canceled || res.filePaths.length === 0) {
+    return { canceled: true };
+  }
+
+  const fullPath = res.filePaths[0];
+  const fileName = path.basename(fullPath);
+  const appName = path.parse(fullPath).name;
+  return { canceled: false, filePath: fullPath, fileName, appName };
+});
+
+ipcMain.handle('system:get-running-processes', () => {
+  try {
+    const output = execSync(
+      'powershell -NoProfile -Command "(Get-Process | Where-Object { $_.MainWindowTitle -or $_.SessionId -gt 0 } | Select-Object -ExpandProperty ProcessName -Unique) -join \',\'"',
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: 3000 }
+    );
+    const names = output
+      .trim()
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s && !['svchost', 'csrss', 'dwm', 'smss', 'conhost', 'SearchHost', 'taskhostw', 'services', 'lsass'].includes(s))
+      .sort((a, b) => a.localeCompare(b));
+    return names;
+  } catch {
+    return [];
+  }
 });
 
 app.whenReady().then(() => {

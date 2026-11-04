@@ -22,6 +22,8 @@ export interface EmulationState {
   isRunning: boolean;
   activePreset: QuestPreset | null;
   pid: number | null;
+  pids?: number[];
+  activeExecutables?: string[];
   startTime: number | null;
   targetDurationSeconds: number;
   elapsedSeconds: number;
@@ -33,7 +35,7 @@ export interface EmulationState {
 }
 
 export class ProcessManager {
-  private childProcess: ChildProcess | null = null;
+  private childProcesses: ChildProcess[] = [];
   private timerInterval: NodeJS.Timeout | null = null;
   private stubExePath: string;
   private binDir: string;
@@ -43,6 +45,8 @@ export class ProcessManager {
     isRunning: false,
     activePreset: null,
     pid: null,
+    pids: [],
+    activeExecutables: [],
     startTime: null,
     targetDurationSeconds: 15 * 60,
     elapsedSeconds: 0,
@@ -110,39 +114,73 @@ export class ProcessManager {
     }
 
     try {
-      let cleanExeName = params.preset.executable.trim();
-      if (!cleanExeName.toLowerCase().endsWith('.exe')) {
-        cleanExeName += '.exe';
+      // Parse executable names (can be comma or semicolon separated aliases)
+      const rawNames = params.preset.executable
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const exeNames: string[] = [];
+      for (const name of rawNames) {
+        let clean = name;
+        if (!clean.toLowerCase().endsWith('.exe')) {
+          clean += '.exe';
+        }
+        if (!exeNames.includes(clean)) {
+          exeNames.push(clean);
+        }
       }
 
-      const targetExePath = path.join(this.binDir, cleanExeName);
-
-      // Copy stub executable to target game executable name
-      try {
-        fs.copyFileSync(this.stubExePath, targetExePath);
-      } catch (copyErr) {
-        // If file is locked, try with random timestamp suffix
-        console.warn('[ProcessManager] Target exe copy warning:', copyErr);
+      if (exeNames.length === 0) {
+        return { success: false, error: 'Не указано имя исполняемого файла' };
       }
 
-      const title = params.preset.windowTitle || params.preset.name;
-      const args = [
-        `--title=${title}`,
-        `--mode=${params.windowMode}`,
-        '--width=720',
-        '--height=440',
-      ];
+      this.childProcesses = [];
+      const pids: number[] = [];
 
-      const child = spawn(targetExePath, args, {
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: params.windowMode === 'hidden',
-      });
+      // Spawn all specified process aliases
+      for (let i = 0; i < exeNames.length; i++) {
+        const exeName = exeNames[i];
+        const targetExePath = path.join(this.binDir, exeName);
 
-      child.unref();
+        try {
+          fs.copyFileSync(this.stubExePath, targetExePath);
+        } catch (copyErr) {
+          console.warn('[ProcessManager] Target exe copy warning:', copyErr);
+        }
 
-      this.childProcess = child;
-      const pid = child.pid || 0;
+        const title = params.preset.windowTitle || params.preset.name;
+        // Only the first process gets the visible window if visible mode is active
+        const processMode = i === 0 ? params.windowMode : 'hidden';
+
+        const args = [
+          `--title=${title}`,
+          `--mode=${processMode}`,
+          '--width=720',
+          '--height=440',
+        ];
+
+        const child = spawn(targetExePath, args, {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: processMode === 'hidden',
+        });
+
+        child.unref();
+        this.childProcesses.push(child);
+        if (child.pid) {
+          pids.push(child.pid);
+        }
+
+        child.on('exit', () => {
+          this.childProcesses = this.childProcesses.filter((c) => c !== child);
+          if (this.childProcesses.length === 0 && this.state.isRunning) {
+            this.stopEmulation();
+          }
+        });
+      }
+
+      const primaryPid = pids[0] || 0;
 
       // Connect Discord RPC if app ID is provided
       let rpcConnected = false;
@@ -150,7 +188,7 @@ export class ProcessManager {
         rpcConnected = await discordRpc.connect(params.preset.discordAppId);
         if (rpcConnected) {
           discordRpc.setActivity({
-            pid,
+            pid: primaryPid,
             state: 'Квест Discord (XQuest)',
             details: params.preset.name,
             startTimestamp: Date.now(),
@@ -161,7 +199,9 @@ export class ProcessManager {
       this.state = {
         isRunning: true,
         activePreset: params.preset,
-        pid,
+        pid: primaryPid,
+        pids,
+        activeExecutables: exeNames,
         startTime: Date.now(),
         targetDurationSeconds: params.durationMinutes * 60,
         elapsedSeconds: 0,
@@ -190,7 +230,7 @@ export class ProcessManager {
           if (Notification.isSupported()) {
             new Notification({
               title: '🎉 Квест выполнен!',
-              body: `Вы продержали ${params.preset.name} запущенным ${params.durationMinutes} мин. Заберите награду в Discord!`,
+              body: `Вы продержали ${params.preset.name} (${exeNames.join(', ')}) запущенным ${params.durationMinutes} мин. Заберите награду в Discord!`,
             }).show();
           }
 
@@ -203,13 +243,7 @@ export class ProcessManager {
         this.notifyStateChange();
       }, 1000);
 
-      child.on('exit', () => {
-        if (this.state.isRunning) {
-          this.stopEmulation();
-        }
-      });
-
-      return { success: true, pid };
+      return { success: true, pid: primaryPid };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: message };
@@ -222,14 +256,14 @@ export class ProcessManager {
       this.timerInterval = null;
     }
 
-    if (this.childProcess) {
+    for (const child of this.childProcesses) {
       try {
-        if (this.childProcess.pid) {
-          process.kill(this.childProcess.pid);
+        if (child.pid) {
+          process.kill(child.pid);
         }
       } catch {}
-      this.childProcess = null;
     }
+    this.childProcesses = [];
 
     if (this.state.pid) {
       discordRpc.clearActivity(this.state.pid);
@@ -239,6 +273,8 @@ export class ProcessManager {
     this.state.isRunning = false;
     this.state.activePreset = null;
     this.state.pid = null;
+    this.state.pids = [];
+    this.state.activeExecutables = [];
     this.state.rpcConnected = false;
 
     this.notifyStateChange();

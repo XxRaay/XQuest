@@ -4,7 +4,7 @@ export type WindowMode = 'visible' | 'minimized' | 'hidden';
 export interface QuestPreset {
   id: string;
   name: string;
-  executable: string;
+  executable: string; // Can be single "firefox.exe" or aliases "firefox.exe, firefox-bin.exe"
   windowTitle: string;
   category: 'game' | 'browser' | 'app' | 'custom';
   description: string;
@@ -17,6 +17,8 @@ export interface EmulationState {
   isRunning: boolean;
   activePreset: QuestPreset | null;
   pid: number | null;
+  pids?: number[];
+  activeExecutables?: string[];
   startTime: number | null;
   targetDurationSeconds: number;
   elapsedSeconds: number;
@@ -31,6 +33,13 @@ export interface DiscordStatus {
   isDiscordRunning: boolean;
   pid?: number;
   processCount?: number;
+}
+
+export interface SelectedExeResult {
+  canceled: boolean;
+  filePath?: string;
+  fileName?: string;
+  appName?: string;
 }
 
 export interface IElectronAPI {
@@ -48,6 +57,8 @@ export interface IElectronAPI {
   saveCustomPreset: (preset: QuestPreset) => Promise<{ success: boolean; error?: string }>;
   deleteCustomPreset: (id: string) => Promise<{ success: boolean; error?: string }>;
   openStubWindow: () => Promise<void>;
+  selectExeFile: () => Promise<SelectedExeResult>;
+  getRunningProcesses: () => Promise<string[]>;
   minimizeWindow: () => void;
   maximizeWindow: () => void;
   closeWindow: () => void;
