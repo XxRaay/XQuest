@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QuestPreset, WindowMode, EmulationState } from '../types';
+import { QuestPreset, WindowMode, EmulationState, ActiveProcessSession } from '../types';
 import {
   Play,
   Square,
@@ -9,11 +9,11 @@ import {
   CheckCircle2,
   ShieldCheck,
   FolderOpen,
-  Layers,
   Sparkles,
   BookmarkPlus,
   Activity,
-  ChevronDown
+  Layers,
+  X
 } from 'lucide-react';
 
 interface ActiveEmulationCardProps {
@@ -22,15 +22,16 @@ interface ActiveEmulationCardProps {
   onSelectPreset: (preset: QuestPreset) => void;
   windowMode: WindowMode;
   onWindowModeChange: (mode: WindowMode) => void;
-  durationMinutes: number;
-  onDurationChange: (minutes: number) => void;
+  durationSeconds: number;
+  onDurationChange: (seconds: number) => void;
   autoStop: boolean;
   onAutoStopChange: (val: boolean) => void;
   soundAlert: boolean;
   onSoundAlertChange: (val: boolean) => void;
   onStart: () => void;
-  onStop: () => void;
-  onOpenWindow: () => void;
+  onStopAll: () => void;
+  onStopSingleSession: (sessionId: string) => void;
+  onOpenWindow: (sessionId?: string) => void;
   onSaveToPresets: (preset: QuestPreset) => void;
 }
 
@@ -40,18 +41,22 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
   onSelectPreset,
   windowMode,
   onWindowModeChange,
-  durationMinutes,
+  durationSeconds,
   onDurationChange,
   autoStop,
   onAutoStopChange,
   soundAlert,
   onSoundAlertChange,
   onStart,
-  onStop,
+  onStopAll,
+  onStopSingleSession,
   onOpenWindow,
   onSaveToPresets,
 }) => {
   const isRunning = state.isRunning;
+  const sessions = state.sessions || [];
+  const activeCount = sessions.length;
+
   const [activeTab, setActiveTab] = useState<'preset' | 'custom'>('preset');
 
   // Custom executable input state
@@ -69,7 +74,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
     }
   }, [selectedPreset]);
 
-  // Sync custom input changes back to selected preset
   const handleCustomExeChange = (val: string) => {
     setCustomExe(val);
     const cleaned = val.trim();
@@ -85,18 +89,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
     });
   };
 
-  const handleCustomTitleChange = (val: string) => {
-    setCustomTitle(val);
-    onSelectPreset({
-      ...selectedPreset,
-      name: val || 'Пользовательский процесс',
-      windowTitle: val || 'Пользовательский процесс',
-      executable: customExe || selectedPreset.executable,
-      isCustom: true,
-    });
-  };
-
-  // Open native Windows file dialog to select any .exe from disk
   const handleBrowseExe = async () => {
     if (window.electronAPI) {
       const res = await window.electronAPI.selectExeFile();
@@ -117,7 +109,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
     }
   };
 
-  // Load running Windows processes
   const handleOpenProcessList = async () => {
     if (window.electronAPI) {
       const procs = await window.electronAPI.getRunningProcesses();
@@ -142,22 +133,32 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
     setShowProcessDropdown(false);
   };
 
-  // Quick chips for popular processes (Firefox, Chrome, Edge, etc.)
+  // Quick chips for popular processes including Firefox & Roblox
   const QUICK_PROCESS_CHIPS = [
     { label: 'Firefox', exe: 'firefox.exe, firefox-bin.exe', title: 'Mozilla Firefox' },
+    { label: 'Roblox', exe: 'RobloxPlayerBeta.exe', title: 'Roblox' },
     { label: 'Chrome', exe: 'chrome.exe', title: 'Google Chrome' },
     { label: 'Opera GX', exe: 'opera.exe', title: 'Opera GX' },
     { label: 'Edge', exe: 'msedge.exe', title: 'Microsoft Edge' },
-    { label: 'Яндекс Браузер', exe: 'browser.exe', title: 'Yandex Browser' },
-    { label: 'Telegram', exe: 'Telegram.exe', title: 'Telegram' },
+    { label: 'Яндекс', exe: 'browser.exe', title: 'Yandex Browser' },
     { label: 'Steam', exe: 'steam.exe', title: 'Steam' },
+    { label: 'Telegram', exe: 'Telegram.exe', title: 'Telegram' },
     { label: 'CS 2', exe: 'cs2.exe', title: 'Counter-Strike 2' },
-    { label: 'Dota 2', exe: 'dota2.exe', title: 'Dota 2' },
     { label: 'Valorant', exe: 'VALORANT-Win64-Shipping.exe', title: 'VALORANT' },
   ];
 
-  const targetSeconds = isRunning ? state.targetDurationSeconds : durationMinutes * 60;
-  const elapsedSeconds = state.elapsedSeconds;
+  // Target duration presets (Notice: bare 15 minutes is REMOVED; standard is 15m 20s with +20s buffer!)
+  const DURATION_PRESETS = [
+    { label: '15м 20с (квест +20с)', seconds: 15 * 60 + 20 },
+    { label: '10м 20с', seconds: 10 * 60 + 20 },
+    { label: '20м 20с', seconds: 20 * 60 + 20 },
+    { label: '30м 20с', seconds: 30 * 60 + 20 },
+  ];
+
+  // Primary timer calculation (takes the session with max elapsed, or first session)
+  const primarySession = sessions[0];
+  const targetSeconds = primarySession ? primarySession.targetDurationSeconds : durationSeconds;
+  const elapsedSeconds = primarySession ? primarySession.elapsedSeconds : 0;
   const remainingSeconds = Math.max(0, targetSeconds - elapsedSeconds);
 
   const progressPercent = targetSeconds > 0
@@ -170,11 +171,11 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const presetToDisplay = isRunning && state.activePreset ? state.activePreset : selectedPreset;
-
   const radius = 68;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
+
+  const hasAnyCompleted = sessions.some((s) => s.isCompleted);
 
   return (
     <div className="relative rounded-2xl bg-card border border-card-border p-6 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -186,7 +187,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
           <div className="flex p-0.5 bg-black/40 border border-white/[0.08] rounded-xl">
             <button
               type="button"
-              disabled={isRunning}
               onClick={() => setActiveTab('preset')}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                 activeTab === 'preset'
@@ -198,7 +198,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
             </button>
             <button
               type="button"
-              disabled={isRunning}
               onClick={() => setActiveTab('custom')}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${
                 activeTab === 'custom'
@@ -227,49 +226,110 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                   : 'bg-slate-400'
               }`}
             />
-            {isRunning ? 'Эмуляция активна' : 'Готово к запуску'}
+            {isRunning ? `Запущено процессов: ${activeCount}` : 'Готово к запуску'}
           </span>
 
-          {state.isCompleted && (
+          {hasAnyCompleted && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 border border-emerald-400/30 text-emerald-300">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              15 минут засчитаны!
+              Квест выполнен (+20с запас)!
             </span>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Left Column: Preset Display OR Custom Process Input */}
+        {/* Left Column: Preset Display OR Custom Process Input OR Active Multi-Processes List */}
         <div className="lg:col-span-5 space-y-4">
-          {activeTab === 'preset' && !selectedPreset.isCustom ? (
-            /* Standard Preset View */
+          {/* Active Sessions Mini-Tray if multiple are running */}
+          {isRunning && sessions.length > 0 ? (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-sky-400" />
+                  <span>Активные сессии ({sessions.length}):</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={onStopAll}
+                  className="text-[11px] text-red-400 hover:text-red-300 hover:underline"
+                >
+                  Остановить все
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="p-2.5 rounded-xl bg-black/40 border border-white/[0.08] flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="font-semibold text-white">{s.name}</span>
+                        <code className="text-[10px] text-sky-300 font-mono px-1 rounded bg-white/[0.06]">
+                          {s.activeExecutables?.join(', ') || s.executable}
+                        </code>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        Таймер: {formatTime(s.elapsedSeconds)} / {formatTime(s.targetDurationSeconds)}
+                        {s.pids?.length ? ` • PID: ${s.pids.join(', ')}` : ''}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {s.windowMode === 'visible' && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenWindow(s.id)}
+                          title="Показать окно стрима"
+                          className="p-1 rounded bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onStopSingleSession(s.id)}
+                        title="Остановить этот процесс"
+                        className="p-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-300 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : activeTab === 'preset' ? (
+            /* Selected Preset Preview */
             <div className="space-y-3">
               <div>
                 <h2 className="text-2xl font-bold text-white tracking-tight">
-                  {presetToDisplay.name}
+                  {selectedPreset.name}
                 </h2>
                 <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span>Исполняемый файл:</span>
                   <code className="px-1.5 py-0.5 rounded bg-white/[0.06] text-sky-300 font-mono text-[11px] border border-white/[0.08]">
-                    {presetToDisplay.executable}
+                    {selectedPreset.executable}
                   </code>
                 </div>
               </div>
 
-              {presetToDisplay.rewardHint && (
+              {selectedPreset.rewardHint && (
                 <div className="text-xs px-3 py-2 rounded-lg bg-discord-blurple/10 border border-discord-blurple/25 text-indigo-200">
                   <span className="text-sky-300 font-medium">Награда за квест:</span>{' '}
-                  {presetToDisplay.rewardHint}
+                  {selectedPreset.rewardHint}
                 </div>
               )}
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {presetToDisplay.description}
+                {selectedPreset.description}
               </p>
             </div>
           ) : (
-            /* Arbitrary Process Input Mode (Fixes custom process / firefox.exe problem) */
+            /* Arbitrary Process Input Mode (Firefox, Roblox, etc.) */
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -277,23 +337,21 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                     Имя файла процесса (.exe)
                   </label>
                   <span className="text-[10px] text-sky-400/80">
-                    Поддерживаются алиасы через запятую
+                    Можно через запятую
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
-                    disabled={isRunning}
                     value={customExe}
                     onChange={(e) => handleCustomExeChange(e.target.value)}
-                    placeholder="Например: firefox.exe или firefox.exe, firefox-bin.exe"
+                    placeholder="Например: firefox.exe или RobloxPlayerBeta.exe"
                     spellCheck={false}
                     autoComplete="off"
                     className="flex-1 px-3 py-2 bg-black/40 border border-white/[0.12] rounded-xl text-xs text-white font-mono placeholder-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-400 transition-all"
                   />
                   <button
                     type="button"
-                    disabled={isRunning}
                     onClick={handleBrowseExe}
                     title="Выбрать .exe файл на компьютере"
                     className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-xs text-slate-200 transition-colors whitespace-nowrap active:scale-[0.97]"
@@ -303,7 +361,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    disabled={isRunning}
                     onClick={handleOpenProcessList}
                     title="Выбрать из запущенных процессов Windows"
                     className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 transition-colors active:scale-[0.97]"
@@ -311,9 +368,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                     <Activity className="w-3.5 h-3.5 text-emerald-400" />
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Если не уверены в точном названии, укажите несколько: <code className="text-sky-300">firefox.exe, firefox-bin.exe</code>. XQuest запустит оба микро-процесса одновременно.
-                </p>
               </div>
 
               {/* Running Processes Dropdown Picker */}
@@ -364,7 +418,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                     <button
                       key={chip.label}
                       type="button"
-                      disabled={isRunning}
                       onClick={() => {
                         setCustomExe(chip.exe);
                         setCustomTitle(chip.title);
@@ -386,11 +439,9 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
                 </div>
               </div>
 
-              {/* Save custom process to user's library button */}
               {customExe.trim() && (
                 <button
                   type="button"
-                  disabled={isRunning}
                   onClick={() => {
                     const cleanName = customTitle.trim() || customExe.trim();
                     onSaveToPresets({
@@ -412,32 +463,14 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
             </div>
           )}
 
-          {/* Active PIDs / Running Stats */}
-          {isRunning && (
-            <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] text-[11px] space-y-1">
-              <div className="flex items-center justify-between text-slate-300">
-                <span>Активные процессы:</span>
-                <code className="text-sky-300 font-mono">
-                  {state.activeExecutables?.join(', ') || presetToDisplay.executable}
-                </code>
-              </div>
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>PID процессов:</span>
-                <span className="font-mono text-slate-300">
-                  {state.pids?.join(', ') || state.pid}
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Low Resource Indicator */}
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>0.0% CPU • ~4 МБ ОЗУ • Полная безопасность детектора Discord</span>
+            <span>0.0% CPU • ~4 МБ ОЗУ на процесс • Запуск нескольких процессов сразу</span>
           </div>
         </div>
 
-        {/* Center Column: Radial Countdown Timer */}
+        {/* Center Column: Radial Countdown Timer (15m 20s standard) */}
         <div className="lg:col-span-3 flex flex-col items-center justify-center py-2">
           <div className="relative w-44 h-44 flex items-center justify-center">
             <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 160 160">
@@ -472,10 +505,10 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <span className="text-3xl font-bold font-mono text-white tabular-nums tracking-tight">
-                {isRunning ? formatTime(remainingSeconds) : formatTime(durationMinutes * 60)}
+                {isRunning ? formatTime(remainingSeconds) : formatTime(durationSeconds)}
               </span>
               <span className="text-[11px] text-muted-foreground mt-0.5">
-                {isRunning ? (remainingSeconds === 0 ? 'Квест выполнен' : 'Осталось') : 'Длительность'}
+                {isRunning ? (remainingSeconds === 0 ? 'Квест выполнен' : 'Осталось') : 'Время с запасом'}
               </span>
               {isRunning && (
                 <span className="text-[10px] text-sky-400/80 font-mono mt-0.5">
@@ -496,7 +529,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
             <div className="grid grid-cols-3 gap-1.5 bg-black/40 p-1 rounded-lg border border-white/[0.06]">
               <button
                 type="button"
-                disabled={isRunning}
                 onClick={() => onWindowModeChange('visible')}
                 className={`py-1.5 px-2 text-[11px] font-medium rounded transition-all ${
                   windowMode === 'visible'
@@ -509,7 +541,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
               </button>
               <button
                 type="button"
-                disabled={isRunning}
                 onClick={() => onWindowModeChange('minimized')}
                 className={`py-1.5 px-2 text-[11px] font-medium rounded transition-all ${
                   windowMode === 'minimized'
@@ -521,7 +552,6 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
               </button>
               <button
                 type="button"
-                disabled={isRunning}
                 onClick={() => onWindowModeChange('hidden')}
                 className={`py-1.5 px-2 text-[11px] font-medium rounded transition-all ${
                   windowMode === 'hidden'
@@ -534,26 +564,27 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
             </div>
           </div>
 
-          {/* Duration Selector */}
+          {/* Duration Selector (Notice: 15 минут is removed; replaced with 15м 20с with +20s buffer!) */}
           <div>
             <label className="text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>Целевое время</span>
-              <span className="text-[11px] text-sky-400 font-mono">{durationMinutes} мин</span>
+              <span>Целевое время (с запасом +20с)</span>
+              <span className="text-[11px] text-sky-400 font-mono">
+                {formatTime(durationSeconds)}
+              </span>
             </label>
-            <div className="flex gap-1.5">
-              {[15, 10, 30, 60].map((mins) => (
+            <div className="grid grid-cols-2 gap-1.5">
+              {DURATION_PRESETS.map((d) => (
                 <button
-                  key={mins}
+                  key={d.label}
                   type="button"
-                  disabled={isRunning}
-                  onClick={() => onDurationChange(mins)}
-                  className={`flex-1 py-1 text-xs rounded border transition-colors ${
-                    durationMinutes === mins
+                  onClick={() => onDurationChange(d.seconds)}
+                  className={`py-1.5 px-2 text-[11px] rounded border transition-colors ${
+                    durationSeconds === d.seconds
                       ? 'bg-white/[0.1] border-sky-400/40 text-white font-medium'
                       : 'border-white/[0.06] text-muted-foreground hover:text-slate-200 hover:bg-white/[0.04]'
                   }`}
                 >
-                  {mins === 15 ? '15 м (квест)' : `${mins} м`}
+                  {d.label}
                 </button>
               ))}
             </div>
@@ -587,37 +618,25 @@ export const ActiveEmulationCard: React.FC<ActiveEmulationCardProps> = ({
 
           {/* Primary Action Buttons */}
           <div className="pt-2 flex items-center gap-2">
-            {!isRunning ? (
+            <button
+              type="button"
+              onClick={onStart}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-sky-950 shadow-[0_0_24px_rgba(56,189,248,0.35)] transition-all active:scale-[0.97]"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Запустить {selectedPreset.name}</span>
+            </button>
+
+            {isRunning && (
               <button
                 type="button"
-                onClick={onStart}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-sky-950 shadow-[0_0_24px_rgba(56,189,248,0.35)] transition-all active:scale-[0.97]"
+                onClick={onStopAll}
+                className="flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all active:scale-[0.97]"
+                title="Остановить все запущенные процессы"
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Запустить эмуляцию</span>
+                <Square className="w-4 h-4 fill-current" />
+                <span>Стоп ({activeCount})</span>
               </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={onStop}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all active:scale-[0.97]"
-                >
-                  <Square className="w-4 h-4 fill-current" />
-                  <span>Остановить</span>
-                </button>
-
-                {windowMode === 'visible' && (
-                  <button
-                    type="button"
-                    onClick={onOpenWindow}
-                    title="Показать окно игры для демонстрации экрана"
-                    className="p-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] transition-all active:scale-[0.97]"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                )}
-              </>
             )}
           </div>
         </div>

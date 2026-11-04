@@ -1,14 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  startSession: (params: unknown) => ipcRenderer.invoke('emulator:start-session', params),
+  startBatchSessions: (params: unknown) => ipcRenderer.invoke('emulator:start-batch', params),
+  stopSession: (sessionId: string) => ipcRenderer.invoke('emulator:stop-session', sessionId),
+  stopAllSessions: () => ipcRenderer.invoke('emulator:stop-all'),
+
+  // Backward compatibility
   startEmulation: (params: unknown) => ipcRenderer.invoke('emulator:start', params),
   stopEmulation: () => ipcRenderer.invoke('emulator:stop'),
+
   getEmulationStatus: () => ipcRenderer.invoke('emulator:get-status'),
   checkDiscord: () => ipcRenderer.invoke('emulator:check-discord'),
   getPresets: () => ipcRenderer.invoke('emulator:get-presets'),
   saveCustomPreset: (preset: unknown) => ipcRenderer.invoke('emulator:save-custom-preset', preset),
   deleteCustomPreset: (id: string) => ipcRenderer.invoke('emulator:delete-custom-preset', id),
-  openStubWindow: () => ipcRenderer.invoke('emulator:open-stub-window'),
+  openStubWindow: (sessionId?: string) => ipcRenderer.invoke('emulator:open-stub-window', sessionId),
   selectExeFile: () => ipcRenderer.invoke('dialog:select-exe'),
   getRunningProcesses: () => ipcRenderer.invoke('system:get-running-processes'),
 

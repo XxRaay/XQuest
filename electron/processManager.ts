@@ -14,47 +14,58 @@ export interface QuestPreset {
   rewardHint?: string;
   discordAppId?: string;
   isCustom?: boolean;
+  accentColor?: string;
 }
 
 export type WindowMode = 'visible' | 'minimized' | 'hidden';
 
-export interface EmulationState {
-  isRunning: boolean;
-  activePreset: QuestPreset | null;
-  pid: number | null;
-  pids?: number[];
-  activeExecutables?: string[];
-  startTime: number | null;
-  targetDurationSeconds: number;
+export interface ActiveProcessSession {
+  id: string;
+  presetId: string;
+  name: string;
+  executable: string;
+  activeExecutables: string[];
+  windowTitle: string;
+  pids: number[];
+  startTime: number;
+  targetDurationSeconds: number; // default 920 (15m 20s)
   elapsedSeconds: number;
   windowMode: WindowMode;
-  rpcConnected: boolean;
   isCompleted: boolean;
   autoStop: boolean;
   soundAlert: boolean;
+  accentColor?: string;
+}
+
+export interface EmulationState {
+  isRunning: boolean;
+  sessions: ActiveProcessSession[];
+  targetDurationSeconds: number;
+  autoStop: boolean;
+  soundAlert: boolean;
+  windowMode: WindowMode;
+}
+
+interface InternalSessionHolder {
+  session: ActiveProcessSession;
+  children: ChildProcess[];
 }
 
 export class ProcessManager {
-  private childProcesses: ChildProcess[] = [];
+  private activeSessions: Map<string, InternalSessionHolder> = new Map();
   private timerInterval: NodeJS.Timeout | null = null;
   private stubExePath: string;
   private binDir: string;
   private onStateChangeCallback: ((state: EmulationState) => void) | null = null;
 
+  // Default target duration: 15 minutes + 20 seconds = 920 seconds
   public state: EmulationState = {
     isRunning: false,
-    activePreset: null,
-    pid: null,
-    pids: [],
-    activeExecutables: [],
-    startTime: null,
-    targetDurationSeconds: 15 * 60,
-    elapsedSeconds: 0,
-    windowMode: 'visible',
-    rpcConnected: false,
-    isCompleted: false,
+    sessions: [],
+    targetDurationSeconds: 15 * 60 + 20, // 920 seconds
     autoStop: true,
     soundAlert: true,
+    windowMode: 'visible',
   };
 
   constructor() {
@@ -65,6 +76,7 @@ export class ProcessManager {
 
     this.ensureStubCompiled();
     this.ensureBinDir();
+    this.startGlobalTicker();
   }
 
   public setOnStateChange(cb: (state: EmulationState) => void) {
@@ -72,18 +84,22 @@ export class ProcessManager {
   }
 
   private notifyStateChange() {
+    this.state.sessions = Array.from(this.activeSessions.values()).map((h) => ({ ...h.session }));
+    this.state.isRunning = this.state.sessions.length > 0;
     if (this.onStateChangeCallback) {
-      this.onStateChangeCallback({ ...this.state });
+      this.onStateChangeCallback({ ...this.state, sessions: [...this.state.sessions] });
     }
   }
 
   private ensureStubCompiled(): void {
     if (!fs.existsSync(this.stubExePath)) {
       const buildScript = path.join(__dirname, 'stub', 'build-stub.js');
-      if (fs.existsSync(buildScript)) {
+      const srcBuildScript = path.join(__dirname, '../electron/stub', 'build-stub.js');
+      const scriptToRun = fs.existsSync(buildScript) ? buildScript : srcBuildScript;
+      if (fs.existsSync(scriptToRun)) {
         try {
           console.log('[ProcessManager] Compiling StubRunner.exe...');
-          execSync(`node "${buildScript}"`, { stdio: 'inherit' });
+          execSync(`node "${scriptToRun}"`, { stdio: 'inherit' });
         } catch (err) {
           console.error('[ProcessManager] Failed to compile StubRunner:', err);
         }
@@ -97,24 +113,70 @@ export class ProcessManager {
     }
   }
 
-  public async startEmulation(params: {
+  private startGlobalTicker() {
+    if (this.timerInterval) return;
+
+    this.timerInterval = setInterval(() => {
+      if (this.activeSessions.size === 0) return;
+
+      let hasChanges = false;
+      const completedToStop: string[] = [];
+
+      for (const [sessionId, holder] of this.activeSessions.entries()) {
+        holder.session.elapsedSeconds += 1;
+        hasChanges = true;
+
+        if (
+          holder.session.elapsedSeconds >= holder.session.targetDurationSeconds &&
+          !holder.session.isCompleted
+        ) {
+          holder.session.isCompleted = true;
+
+          // Native Windows Notification
+          if (Notification.isSupported()) {
+            new Notification({
+              title: '🎉 Квест выполнен!',
+              body: `${holder.session.name} продержан 15м 20с. Заберите награду в Discord!`,
+            }).show();
+          }
+
+          if (holder.session.autoStop) {
+            completedToStop.push(sessionId);
+          }
+        }
+      }
+
+      for (const id of completedToStop) {
+        this.stopSession(id);
+      }
+
+      if (hasChanges) {
+        this.notifyStateChange();
+      }
+    }, 1000);
+  }
+
+  public async startSession(params: {
     preset: QuestPreset;
     windowMode: WindowMode;
-    durationMinutes: number;
+    durationSeconds: number;
     autoStop: boolean;
     soundAlert: boolean;
-  }): Promise<{ success: boolean; pid?: number; error?: string }> {
-    if (this.state.isRunning) {
-      await this.stopEmulation();
-    }
-
+  }): Promise<{ success: boolean; sessionId?: string; error?: string }> {
     this.ensureStubCompiled();
     if (!fs.existsSync(this.stubExePath)) {
-      return { success: false, error: 'StubRunner.exe не найден и не удалось его скомпилировать' };
+      return { success: false, error: 'StubRunner.exe не найден' };
+    }
+
+    const sessionId = params.preset.id || `custom-${Date.now()}`;
+
+    // If already running this exact session, return success
+    if (this.activeSessions.has(sessionId)) {
+      return { success: true, sessionId };
     }
 
     try {
-      // Parse executable names (can be comma or semicolon separated aliases)
+      // Parse executable names and aliases
       const rawNames = params.preset.executable
         .split(/[,;]/)
         .map((s) => s.trim())
@@ -135,10 +197,9 @@ export class ProcessManager {
         return { success: false, error: 'Не указано имя исполняемого файла' };
       }
 
-      this.childProcesses = [];
+      const children: ChildProcess[] = [];
       const pids: number[] = [];
 
-      // Spawn all specified process aliases
       for (let i = 0; i < exeNames.length; i++) {
         const exeName = exeNames[i];
         const targetExePath = path.join(this.binDir, exeName);
@@ -150,7 +211,7 @@ export class ProcessManager {
         }
 
         const title = params.preset.windowTitle || params.preset.name;
-        // Only the first process gets the visible window if visible mode is active
+        // First executable gets visible window if requested, others run quietly in background
         const processMode = i === 0 ? params.windowMode : 'hidden';
 
         const args = [
@@ -167,15 +228,18 @@ export class ProcessManager {
         });
 
         child.unref();
-        this.childProcesses.push(child);
+        children.push(child);
         if (child.pid) {
           pids.push(child.pid);
         }
 
         child.on('exit', () => {
-          this.childProcesses = this.childProcesses.filter((c) => c !== child);
-          if (this.childProcesses.length === 0 && this.state.isRunning) {
-            this.stopEmulation();
+          const holder = this.activeSessions.get(sessionId);
+          if (holder) {
+            holder.children = holder.children.filter((c) => c !== child);
+            if (holder.children.length === 0) {
+              this.stopSession(sessionId);
+            }
           }
         });
       }
@@ -183,107 +247,97 @@ export class ProcessManager {
       const primaryPid = pids[0] || 0;
 
       // Connect Discord RPC if app ID is provided
-      let rpcConnected = false;
       if (params.preset.discordAppId) {
-        rpcConnected = await discordRpc.connect(params.preset.discordAppId);
-        if (rpcConnected) {
-          discordRpc.setActivity({
-            pid: primaryPid,
-            state: 'Квест Discord (XQuest)',
-            details: params.preset.name,
-            startTimestamp: Date.now(),
-          });
-        }
+        discordRpc.connect(params.preset.discordAppId).then((connected) => {
+          if (connected) {
+            discordRpc.setActivity({
+              pid: primaryPid,
+              state: 'Квест Discord (XQuest)',
+              details: params.preset.name,
+              startTimestamp: Date.now(),
+            });
+          }
+        });
       }
 
-      this.state = {
-        isRunning: true,
-        activePreset: params.preset,
-        pid: primaryPid,
-        pids,
+      const session: ActiveProcessSession = {
+        id: sessionId,
+        presetId: params.preset.id,
+        name: params.preset.name,
+        executable: params.preset.executable,
         activeExecutables: exeNames,
+        windowTitle: params.preset.windowTitle || params.preset.name,
+        pids,
         startTime: Date.now(),
-        targetDurationSeconds: params.durationMinutes * 60,
+        targetDurationSeconds: params.durationSeconds || (15 * 60 + 20),
         elapsedSeconds: 0,
         windowMode: params.windowMode,
-        rpcConnected,
         isCompleted: false,
         autoStop: params.autoStop,
         soundAlert: params.soundAlert,
+        accentColor: params.preset.accentColor,
       };
 
+      this.activeSessions.set(sessionId, { session, children });
       this.notifyStateChange();
 
-      // Start ticker
-      this.timerInterval = setInterval(() => {
-        if (!this.state.isRunning) return;
-
-        this.state.elapsedSeconds += 1;
-
-        if (
-          this.state.elapsedSeconds >= this.state.targetDurationSeconds &&
-          !this.state.isCompleted
-        ) {
-          this.state.isCompleted = true;
-
-          // Trigger Windows OS notification
-          if (Notification.isSupported()) {
-            new Notification({
-              title: '🎉 Квест выполнен!',
-              body: `Вы продержали ${params.preset.name} (${exeNames.join(', ')}) запущенным ${params.durationMinutes} мин. Заберите награду в Discord!`,
-            }).show();
-          }
-
-          if (this.state.autoStop) {
-            this.stopEmulation();
-            return;
-          }
-        }
-
-        this.notifyStateChange();
-      }, 1000);
-
-      return { success: true, pid: primaryPid };
+      return { success: true, sessionId };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: message };
     }
   }
 
-  public async stopEmulation(): Promise<{ success: boolean }> {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
+  public async startBatchSessions(params: {
+    presets: QuestPreset[];
+    windowMode: WindowMode;
+    durationSeconds: number;
+    autoStop: boolean;
+    soundAlert: boolean;
+  }): Promise<{ success: boolean; sessionIds?: string[]; error?: string }> {
+    const sessionIds: string[] = [];
+    for (const preset of params.presets) {
+      const res = await this.startSession({
+        preset,
+        windowMode: params.windowMode,
+        durationSeconds: params.durationSeconds,
+        autoStop: params.autoStop,
+        soundAlert: params.soundAlert,
+      });
+      if (res.success && res.sessionId) {
+        sessionIds.push(res.sessionId);
+      }
     }
+    return { success: true, sessionIds };
+  }
 
-    for (const child of this.childProcesses) {
-      try {
-        if (child.pid) {
-          process.kill(child.pid);
-        }
-      } catch {}
+  public async stopSession(sessionId: string): Promise<{ success: boolean }> {
+    const holder = this.activeSessions.get(sessionId);
+    if (holder) {
+      for (const child of holder.children) {
+        try {
+          if (child.pid) {
+            process.kill(child.pid);
+          }
+        } catch {}
+      }
+      this.activeSessions.delete(sessionId);
+      this.notifyStateChange();
     }
-    this.childProcesses = [];
+    return { success: true };
+  }
 
-    if (this.state.pid) {
-      discordRpc.clearActivity(this.state.pid);
-      discordRpc.disconnect();
+  public async stopAllSessions(): Promise<{ success: boolean }> {
+    for (const sessionId of Array.from(this.activeSessions.keys())) {
+      await this.stopSession(sessionId);
     }
-
-    this.state.isRunning = false;
-    this.state.activePreset = null;
-    this.state.pid = null;
-    this.state.pids = [];
-    this.state.activeExecutables = [];
-    this.state.rpcConnected = false;
-
+    discordRpc.disconnect();
     this.notifyStateChange();
     return { success: true };
   }
 
   public checkDiscordRunning(): { isDiscordRunning: boolean; processCount: number } {
     try {
-      // Fast check via tasklist on Windows
       const output = execSync('tasklist /FI "IMAGENAME eq Discord.exe" /NH', {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'ignore'],

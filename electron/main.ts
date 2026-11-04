@@ -92,7 +92,7 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    processManager.stopEmulation();
+    processManager.stopAllSessions();
   });
 }
 
@@ -114,18 +114,55 @@ ipcMain.on('window:close', () => {
 });
 
 // Emulation handlers
-ipcMain.handle('emulator:start', async (_event, params: {
+ipcMain.handle('emulator:start-session', async (_event, params: {
   preset: QuestPreset;
   windowMode: WindowMode;
-  durationMinutes: number;
+  durationSeconds: number;
   autoStop: boolean;
   soundAlert: boolean;
 }) => {
-  return await processManager.startEmulation(params);
+  return await processManager.startSession(params);
+});
+
+ipcMain.handle('emulator:start-batch', async (_event, params: {
+  presets: QuestPreset[];
+  windowMode: WindowMode;
+  durationSeconds: number;
+  autoStop: boolean;
+  soundAlert: boolean;
+}) => {
+  return await processManager.startBatchSessions(params);
+});
+
+ipcMain.handle('emulator:stop-session', async (_event, sessionId: string) => {
+  return await processManager.stopSession(sessionId);
+});
+
+ipcMain.handle('emulator:stop-all', async () => {
+  return await processManager.stopAllSessions();
+});
+
+// Legacy backward-compatible handlers
+ipcMain.handle('emulator:start', async (_event, params: {
+  preset: QuestPreset;
+  windowMode: WindowMode;
+  durationMinutes?: number;
+  durationSeconds?: number;
+  autoStop: boolean;
+  soundAlert: boolean;
+}) => {
+  const durationSeconds = params.durationSeconds || (params.durationMinutes ? params.durationMinutes * 60 : 15 * 60 + 20);
+  return await processManager.startSession({
+    preset: params.preset,
+    windowMode: params.windowMode,
+    durationSeconds,
+    autoStop: params.autoStop,
+    soundAlert: params.soundAlert,
+  });
 });
 
 ipcMain.handle('emulator:stop', async () => {
-  return await processManager.stopEmulation();
+  return await processManager.stopAllSessions();
 });
 
 ipcMain.handle('emulator:get-status', () => {
@@ -205,7 +242,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  processManager.stopEmulation();
+  processManager.stopAllSessions();
   if (process.platform !== 'darwin') {
     app.quit();
   }

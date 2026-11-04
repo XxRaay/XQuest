@@ -4,29 +4,41 @@ export type WindowMode = 'visible' | 'minimized' | 'hidden';
 export interface QuestPreset {
   id: string;
   name: string;
-  executable: string; // Can be single "firefox.exe" or aliases "firefox.exe, firefox-bin.exe"
+  executable: string; // single or comma-separated aliases
   windowTitle: string;
   category: 'game' | 'browser' | 'app' | 'custom';
   description: string;
   rewardHint?: string;
   discordAppId?: string;
   isCustom?: boolean;
+  accentColor?: string; // Hex or Tailwind color for gorgeous cards
+}
+
+export interface ActiveProcessSession {
+  id: string;
+  presetId: string;
+  name: string;
+  executable: string;
+  activeExecutables: string[];
+  windowTitle: string;
+  pids: number[];
+  startTime: number;
+  targetDurationSeconds: number; // default 920 (15m 20s)
+  elapsedSeconds: number;
+  windowMode: WindowMode;
+  isCompleted: boolean;
+  autoStop: boolean;
+  soundAlert: boolean;
+  accentColor?: string;
 }
 
 export interface EmulationState {
   isRunning: boolean;
-  activePreset: QuestPreset | null;
-  pid: number | null;
-  pids?: number[];
-  activeExecutables?: string[];
-  startTime: number | null;
-  targetDurationSeconds: number;
-  elapsedSeconds: number;
-  windowMode: WindowMode;
-  rpcConnected: boolean;
-  isCompleted: boolean;
+  sessions: ActiveProcessSession[];
+  targetDurationSeconds: number; // default 920s (15m 20s)
   autoStop: boolean;
   soundAlert: boolean;
+  windowMode: WindowMode;
 }
 
 export interface DiscordStatus {
@@ -43,20 +55,28 @@ export interface SelectedExeResult {
 }
 
 export interface IElectronAPI {
-  startEmulation: (params: {
+  startSession: (params: {
     preset: QuestPreset;
     windowMode: WindowMode;
-    durationMinutes: number;
+    durationSeconds: number;
     autoStop: boolean;
     soundAlert: boolean;
-  }) => Promise<{ success: boolean; pid?: number; error?: string }>;
-  stopEmulation: () => Promise<{ success: boolean; error?: string }>;
+  }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  startBatchSessions: (params: {
+    presets: QuestPreset[];
+    windowMode: WindowMode;
+    durationSeconds: number;
+    autoStop: boolean;
+    soundAlert: boolean;
+  }) => Promise<{ success: boolean; sessionIds?: string[]; error?: string }>;
+  stopSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+  stopAllSessions: () => Promise<{ success: boolean; error?: string }>;
   getEmulationStatus: () => Promise<EmulationState>;
   checkDiscord: () => Promise<DiscordStatus>;
   getPresets: () => Promise<QuestPreset[]>;
   saveCustomPreset: (preset: QuestPreset) => Promise<{ success: boolean; error?: string }>;
   deleteCustomPreset: (id: string) => Promise<{ success: boolean; error?: string }>;
-  openStubWindow: () => Promise<void>;
+  openStubWindow: (sessionId?: string) => Promise<void>;
   selectExeFile: () => Promise<SelectedExeResult>;
   getRunningProcesses: () => Promise<string[]>;
   minimizeWindow: () => void;
