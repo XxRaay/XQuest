@@ -69,9 +69,13 @@ export class ProcessManager {
   };
 
   constructor() {
-    const localStub = path.join(__dirname, 'stub', 'StubRunner.exe');
-    const sourceStub = path.join(__dirname, '../electron/stub', 'StubRunner.exe');
-    this.stubExePath = fs.existsSync(localStub) ? localStub : sourceStub;
+    const candidatePaths = [
+      path.join(__dirname, 'stub', 'StubRunner.exe'),
+      path.join(process.resourcesPath || '', 'stub', 'StubRunner.exe'),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'dist-electron', 'stub', 'StubRunner.exe'),
+      path.join(__dirname, '../electron/stub', 'StubRunner.exe'),
+    ];
+    this.stubExePath = candidatePaths.find((p) => p && fs.existsSync(p)) || candidatePaths[0];
     this.binDir = path.join(app.getPath('userData'), 'emulated_bin');
 
     this.ensureStubCompiled();

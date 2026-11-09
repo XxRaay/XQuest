@@ -9,10 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/XxRaay/XQuest/releases"><img src="https://img.shields.io/badge/версия-1.0.0-38bdf8?style=flat-square" alt="Версия" /></a>
+  <a href="https://github.com/XxRaay/XQuest/releases"><img src="https://img.shields.io/github/v/release/XxRaay/XQuest?style=flat-square&color=38bdf8&label=версия" alt="Версия" /></a>
+  <a href="https://github.com/XxRaay/XQuest/actions/workflows/ci.yml"><img src="https://github.com/XxRaay/XQuest/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/платформа-Windows%2010%20%7C%2011-5865F2?style=flat-square" alt="Платформа" />
   <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-34d399?style=flat-square" alt="Node" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/лицензия-MIT-white?style=flat-square" alt="Лицензия" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/лицензия-FCAIL%201.7-white?style=flat-square" alt="Лицензия" /></a>
 </p>
 
 <p align="center">
@@ -60,7 +61,16 @@
 
 ## 🚀 Быстрый старт
 
-### 1. Установка
+### Готовые сборки
+
+Скачайте последнюю версию со страницы [Releases](https://github.com/XxRaay/XQuest/releases):
+
+- **XQuest Setup x.y.z.exe** — установщик (ярлыки в «Пуск» и на рабочем столе).
+- **XQuest-Portable-x.y.z.exe** — портативная версия без установки.
+
+Сборка релизов выполняется автоматически в GitHub Actions при пуше тега `v*` (workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)).
+
+### 1. Установка из исходников
 
 ```powershell
 cd d:\Projects\x-projects\XQuest
@@ -146,10 +156,27 @@ npm run build:electron
 
 # Сборка интерфейса Vite
 npm run build:ui
+
+# Сборка готовых .exe (Installer + Portable)
+npm run dist
+
+# Сборка только Portable .exe
+npm run dist:portable
 ```
+
+### Публикация релиза
+
+GitHub Actions сам соберёт установщик и портативную версию и создаст GitHub Release — достаточно запушить тег:
+
+```powershell
+npm version patch   # или minor / major: обновит package.json и создаст коммит с тегом
+git push --follow-tags
+```
+
+Ручной запуск: **Actions → Release → Run workflow** (можно указать версию).
 
 ---
 
 ## 📄 Лицензия
 
-Распространяется под лицензией [MIT](LICENSE). Copyright © 2026 XxRaay.
+Распространяется под лицензией [Fair Community & AI License (FCAIL) 1.7](LICENSE). Copyright © 2026 XxRaay.

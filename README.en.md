@@ -9,10 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/XxRaay/XQuest/releases"><img src="https://img.shields.io/badge/version-1.0.0-38bdf8?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/XxRaay/XQuest/releases"><img src="https://img.shields.io/github/v/release/XxRaay/XQuest?style=flat-square&color=38bdf8&label=version" alt="Version" /></a>
+  <a href="https://github.com/XxRaay/XQuest/actions/workflows/ci.yml"><img src="https://github.com/XxRaay/XQuest/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-5865F2?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-34d399?style=flat-square" alt="Node" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-white?style=flat-square" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-FCAIL%201.7-white?style=flat-square" alt="License" /></a>
 </p>
 
 <p align="center">
@@ -60,7 +61,16 @@ Downloading 50–120 GB game archives or purchasing paid titles just to sit AFK 
 
 ## 🚀 Quick Start
 
-### 1. Install
+### Prebuilt binaries
+
+Download the latest version from the [Releases](https://github.com/XxRaay/XQuest/releases) page:
+
+- **XQuest Setup x.y.z.exe** — installer (Start Menu and desktop shortcuts).
+- **XQuest-Portable-x.y.z.exe** — portable build with no installation.
+
+Releases are built automatically by GitHub Actions on every `v*` tag push (workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)).
+
+### 1. Install from source
 
 ```powershell
 cd d:\Projects\x-projects\XQuest
@@ -146,10 +156,27 @@ npm run build:electron
 
 # Build Vite UI only
 npm run build:ui
+
+# Package executable .exe (Installer + Portable)
+npm run dist
+
+# Package Portable .exe only
+npm run dist:portable
 ```
+
+### Publishing a release
+
+GitHub Actions builds the installer and the portable build and creates a GitHub Release automatically — just push a tag:
+
+```powershell
+npm version patch   # or minor / major: bumps package.json and creates a tagged commit
+git push --follow-tags
+```
+
+Manual run: **Actions → Release → Run workflow** (version can be specified).
 
 ---
 
 ## 📄 License
 
-Distributed under the [MIT](LICENSE) License. Copyright © 2026 XxRaay.
+Distributed under the [Fair Community & AI License (FCAIL) 1.7](LICENSE). Copyright © 2026 XxRaay.

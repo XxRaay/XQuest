@@ -1,21 +1,113 @@
-MIT License
-
 Copyright (c) 2026 XxRaay
+Original Project: XQuest — https://github.com/XxRaay/XQuest
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Fair Community & AI License (FCAIL)
+Version 1.7
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Canonical license text: https://github.com/XxRaay/FCAIL
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
+
+# Fair Community & AI License (FCAIL)
+Version 1.7
+
+*(Русская версия лицензии находится ниже / Russian version is below)*
+
+## 0. DEFINITIONS
+- **"Licensor"** refers to the original author(s), copyright holder(s), or their authorized successors/assigns of the Original Project.
+- **"Original Project"** refers to the software, source code, assets, documentation, and any other materials distributed under this License.
+- **"Derivative Work"** means any project that incorporates, modifies, or extends the Original Project, where EITHER: (a) the Original Project constitutes **49% or more** of the new project's total volume (measured by the total byte size of original, human-authored source code and raw asset files; expressly excluding third-party dependencies, external libraries (e.g., node_modules), generated code, compiled binaries, minified files, and comments); OR (b) the project is specifically designed or intended to develop, supplement, extend, or act as a modification (e.g., a "mod"), plugin, or add-on for the Original Project, regardless of the volume of code used. An independent work that merely reimplements the ideas, mechanics, or concepts of the Original Project without copying or using its Source Code or assets (a "clean-room" implementation) is NOT a Derivative Work. However, a project remains a Derivative Work as long as it retains substantial architectural, structural, or functional dependencies derived directly from the Original Project's codebase, regardless of gradual code replacement ("Ship of Theseus" rule).
+- **"Larger Work"** means any independent project (not specifically designed to supplement or modify the Original Project) that incorporates fragments, files, or assets from the Original Project, where the Original Project constitutes **strictly less than 49%** of the total volume (calculated using the same methodology as above).
+- **"Source Code"** means the preferred form of the work for making modifications to it (i.e., human-readable code, not just compiled binaries, minified files, or obfuscated assets).
+- **"The Public"** means any individual, entity, or group outside of the strict 50-person Private Use limit defined in Section 2.1. This expressly includes corporate clients (B2B), invite-only users, and whitelisted members.
+
+## 1. GRANT OF RIGHTS
+Subject to the terms and conditions of this License, the Licensor hereby grants you a worldwide, royalty-free, non-exclusive, revocable (in case of breach) license to:
+1. Use, reproduce, modify, and distribute the Original Project, Derivative Works, and Larger Works.
+2. *(Patent Grant)* The Licensor grants a license under any patent claims owned by the Licensor that are necessarily infringed by the Original Project alone. 
+3. *(Trademarks)* This License does NOT grant permission to use the trade names, trademarks, service marks, or product names of the Licensor, except as required for reasonable and customary use in describing the origin of the work (Attribution).
+
+## 2. PERMISSIONS AND CONDITIONS
+You may exercise the granted rights subject to the following conditions:
+1. **Private/Local Use:** You may use and modify the Original Project for personal purposes, or share it privately within a closed circle of specific individuals (a strict maximum of 50 people). In such strictly private cases, publishing the Source Code is not required.
+2. **Copyleft and Thresholds (Public Distribution and Network Use):** If you distribute the Original Project (or any project incorporating it) to the Public, OR if you make its functionality available to the Public interacting with it remotely through a computer network, you **MUST** comply with the following based on the nature and volume of your usage:
+   - **A. Minor Usage in Independent Projects (Larger Work, < 49%):** If your project is an independent work (not designed to supplement, extend, or modify the Original Project) and the Original Project constitutes strictly less than 49% of your project, you are NOT required to open-source your entire project or license your entire project under FCAIL. You must only apply this License (FCAIL) to the specific files, fragments, or assets taken from the Original Project. You must make the Source Code of those specific FCAIL-covered files/fragments publicly available and free of charge. The rest of your proprietary project may remain closed-source.
+   - **B. Derivative Works (Major Usage OR Direct Supplements):** If the Original Project constitutes 49% or more of your project, OR if your project is specifically designed to develop, supplement, extend, or modify the Original Project (e.g., a mod or plugin), the entire project is considered a Derivative Work. You **MUST**:
+     - Provide the complete, readable **Source Code of the ENTIRE Derivative Work** corresponding exactly to the version currently being distributed or operated. You must update the published Source Code to exactly match the active version within 72 hours of any deployment to a production environment accessible to the Public. This explicitly includes disclosing server-side configurations, feature flags, or scripts.
+     - License the **ENTIRE** Derivative Work strictly under the terms of this License (you may choose to use the version you received, or, at your option, any later version published by the Licensor).
+     - This Source Code must remain publicly accessible and free of charge in a standard public repository for the entire duration that the Derivative Work is operated or made available, plus a minimum of one (1) year after it officially ceases to process requests from the Public.
+   - **Mandatory Attribution (Applies to both A and B):** You must explicitly credit the Licensor as the original author in a prominent, easily readable location (e.g., the main 'About' screen, the primary documentation, the top-level README file, or in a LICENSE.MD file in the folder of the incorporated files in case of A) using a font size no smaller than the surrounding text. You **MUST** include a direct, clickable hyperlink to the Original Project's repository or official page.
+
+## 3. RESTRICTIONS (PROHIBITED USES)
+Your license is automatically revoked if you, your Derivative Work, or your Larger Work violate any of the following:
+1. **AI Intolerance (Anti-AI-Hate):** You may not use the Original Project in or for communities, organizations, or projects that maintain an official public policy, rule, or exhibit a persistent, documented, and leadership-endorsed pattern of moderation that condemns, bans, or penalizes the use of Artificial Intelligence (AI) for technical tasks. *(Note: This restriction expressly does NOT apply to policies that restrict specific AI tools strictly for documented information security, data privacy, or corporate compliance reasons).*
+2. **Harmful or Malicious Use:** You may not use the Original Project to create malware, multiplayer cheats, exploits, or to intentionally defame or harm the Licensor, the Original Project, or its community.
+3. **Predatory Monetization and Paywalls:** You may not monetize the Original Project or Derivative Work (including B2B sales or enterprise licensing) through any of the following methods: selling copies or licenses for a fixed price, paywalls, paid subscriptions for access/downloads, any form of advertising (including cross-promotion of other commercial products), mandatory data collection, selling user data to third parties, or monetizing user data through advertising networks, analytics, or APIs.
+   *(Exception for Larger Works: If your project qualifies as a Larger Work under Section 2.2.A, you are expressly permitted to commercially monetize the overall Larger Work (e.g., selling your proprietary game or software), provided that the specific FCAIL-covered components remain publicly and freely accessible in their Source Code form. You cannot place the FCAIL components themselves behind a paywall).*
+   *(Exception for Services and Donations: Selling related services (such as paid technical support, consulting, or custom development) is permitted, provided the software itself remains completely free. Voluntary financial donations (e.g., via Patreon, Boosty) are permitted. Bundling the software with commercial hardware to circumvent this non-commercial clause is prohibited).*
+
+## 4. TERMINATION AND PATENT RETALIATION
+1. **Automatic Termination:** If you fail to comply with any terms of this License, your rights terminate automatically. 
+2. **Cure Period:** However, if you cease all violations, your license is reinstated permanently if the Licensor notifies you of the violation, this is the first time you have received notice of violation from the Licensor, and you cure the violation prior to 30 days after your receipt of the notice.
+3. **Downstream Users:** Termination of your rights does not terminate the licenses of third parties who have received copies or rights from you under this License, provided they remain in full compliance.
+4. **Patent Retaliation:** If you institute patent litigation against any entity alleging that the Original Project or a Derivative Work constitutes direct or contributory patent infringement, then any patent licenses granted to you under this License shall terminate automatically as of the date such litigation is filed.
+
+## 5. DISCLAIMER OF WARRANTIES AND LIMITATION OF LIABILITY
+THE ORIGINAL PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE ORIGINAL PROJECT.
+
+## 6. JURISDICTION AND LANGUAGE
+- **Governing Law:** This License shall be governed by the laws of the jurisdiction explicitly specified by the original Licensor in the Original Project's repository (e.g., in an unmodified NOTICE or README file). Any modification, deletion, or omission of this jurisdictional designation by downstream distributors is legally void. If the original Licensor did not explicitly specify a jurisdiction, the laws of the Russian Federation shall apply, without regard to conflict of law provisions.
+- **Succession:** No later version of this License published by the Licensor or their successors can retroactively revoke rights already granted under earlier versions.
+- **Language Priority:** In the event of a conflict or discrepancy between the English version and any translated version (including the Russian version) of this License, the English version shall prevail and be binding.
+
+---
+
+# Fair Community & AI License (FCAIL)
+Версия 1.7
+
+## 0. ОПРЕДЕЛЕНИЯ
+- **«Лицензиар»** — оригинальный автор(ы), правообладатель(и) или их уполномоченные правопреемники Исходного Проекта.
+- **«Исходный Проект»** — программное обеспечение, исходный код, ассеты, документация и любые другие материалы, распространяемые под данной Лицензией.
+- **«Производный Проект»** — любой проект, который включает, модифицирует или расширяет Исходный Проект, при условии, что выполняется ЛЮБОЕ из следующих условий: (а) Исходный Проект составляет **49% или более** от общего объема нового проекта (измеряется в байтах оригинального, написанного человеком исходного кода и сырых ассетов; при подсчете строго исключаются сторонние зависимости, внешние библиотеки (например, node_modules), сгенерированный код, скомпилированные бинарники, минифицированные файлы и комментарии); ИЛИ (б) проект специально предназначен или направлен на развитие, дополнение, расширение или модификацию (например, как мод, плагин или аддон) Исходного Проекта, независимо от объема использованного кода. Независимый проект, который лишь воссоздает идеи, механики или концепты Исходного Проекта без копирования или использования его Исходного Кода или ассетов («clean-room» разработка), НЕ является Производным Проектом. Однако, проект сохраняет статус Производного Проекта до тех пор, пока он сохраняет существенные архитектурные, структурные или функциональные зависимости, унаследованные непосредственно от кодовой базы Исходного Проекта, независимо от степени постепенной замены оригинального кода (правило «Корабля Тесея»).
+- **«Составной Проект» (Larger Work)** — любой независимый проект (не предназначенный специально для дополнения или модификации Исходного Проекта), включающий фрагменты, файлы или ассеты Исходного Проекта, объем которых составляет **строго менее 49%** от общего объема проекта (рассчитывается по той же методологии, что и выше).
+- **«Исходный Код»** — предпочтительная форма произведения для внесения в него изменений (т.е. читаемый человеком исходный код, а не только скомпилированные бинарники, обфусцированные или минифицированные файлы).
+- **«Публика» (Public)** — любые лица, организации или группы, выходящие за рамки строгого лимита в 50 человек для Приватного использования (см. п. 2.1). Сюда явно входят корпоративные B2B-клиенты, пользователи по инвайтам и участники закрытых вайтлистов.
+
+## 1. ПРЕДОСТАВЛЕНИЕ ПРАВ
+В соответствии с условиями данной Лицензии, Лицензиар настоящим предоставляет вам всемирное, безвозмездное, неисключительное, отзываемое (в случае нарушения) право:
+1. Использовать, воспроизводить, изменять и распространять Исходный Проект, Производные Проекты и Составные Проекты.
+2. *(Патентное право)* Лицензиар предоставляет лицензию на использование любых патентных прав, принадлежащих Лицензиару, которые неизбежно затрагиваются самим Исходным Проектом.
+3. *(Товарные знаки)* Настоящая Лицензия НЕ дает права использовать торговые наименования, товарные знаки, знаки обслуживания или названия продуктов Лицензиара, за исключением случаев, когда это разумно необходимо для указания авторства (Атрибуции).
+
+## 2. РАЗРЕШЕНИЯ И УСЛОВИЯ
+Вы можете реализовывать предоставленные права при соблюдении следующих условий:
+1. **Приватное/Локальное использование:** Вы можете использовать и изменять Исходный Проект в личных целях, либо обмениваться им приватно в закрытом кругу конкретных лиц (строгий максимум — 50 человек). В таких строго приватных случаях публикация Исходного Кода не требуется.
+2. **Copyleft и Пороги (Публичное распространение и Сетевое использование):** Если вы распространяете Исходный Проект (или проект, включающий его) Публике, ИЛИ если вы предоставляете его функционал Публике, взаимодействующей с ним удаленно через компьютерную сеть, вы **ОБЯЗАНЫ** соблюдать следующие правила в зависимости от характера и объема вашего использования:
+   - **A. Минорное использование в Независимых Проектах (Составной Проект, < 49%):** Если ваш проект является независимым (не направлен на развитие, дополнение или модификацию Исходного Проекта) и Исходный Проект составляет строго менее 49% от вашего проекта, вы НЕ обязаны открывать исходный код всего вашего проекта или лицензировать его под FCAIL. Вы обязаны применить данную Лицензию (FCAIL) только к тем конкретным файлам, фрагментам или ассетам, которые взяты из Исходного Проекта. Вы обязаны публично и бесплатно предоставить Исходный Код только для этих конкретных файлов/фрагментов. Остальная часть вашего проприетарного проекта может оставаться закрытой (проприетарной).
+   - **B. Производные Проекты (Мажорное использование ИЛИ Прямые дополнения):** Если Исходный Проект составляет 49% или более от вашего проекта, ИЛИ если ваш проект специально предназначен для развития, дополнения, расширения или модификации Исходного Проекта (например, мод или плагин), весь проект признается Производным Проектом. Вы **ОБЯЗАНЫ**:
+     - Предоставить полный, читаемый **Исходный Код ВСЕГО Производного Проекта**, в точности соответствующий рабочей версии. Вы обязаны обновлять Исходный Код при любом деплое в production-среду в течение **72 часов**. Это требование включает публикацию серверных конфигураций, feature-флагов или скриптов.
+     - Лицензировать **ВЕСЬ** Производный Проект строго на условиях данной Лицензии (по вашему выбору: той версии, которую вы получили, ИЛИ любой последующей версии, опубликованной Лицензиаром).
+     - Исходный Код должен оставаться публично доступным в стандартном репозитории в течение всего времени работы проекта, **плюс как минимум один (1) год** после прекращения его работы.
+   - **Обязательная Атрибуция (Применяется к A и B):** Вы обязаны явно указать Лицензиара как оригинального автора в **заметном, легко читаемом месте** (например, на главном экране «О программе», на главной странице документации, в начале README-файла, или в файле LICENSE.MD в папке с заимствованными файлами в случае минорного использования по п. A), используя **размер шрифта не меньше окружающего текста**. Вы **ОБЯЗАНЫ** прикрепить прямую, кликабельную гиперссылку на репозиторий или официальную страницу Исходного Проекта.
+
+## 3. ОГРАНИЧЕНИЯ (ЗАПРЕЩЕННОЕ ИСПОЛЬЗОВАНИЕ)
+Ваша лицензия автоматически аннулируется, если вы, ваш Производный Проект или ваш Составной Проект нарушаете любой из следующих пунктов:
+1. **Нетерпимость к ИИ (Anti-AI-Hate):** Запрещается использовать Исходный Проект в сообществах, организациях или проектах, которые имеют официальную публичную политику, правила или демонстрируют устойчивый, задокументированный и одобряемый руководством паттерн модерации, направленный на осуждение, запрет или наказание за использование Искусственного Интеллекта (ИИ) для технических задач. *(Примечание: Данное ограничение явно НЕ распространяется на политики информационной безопасности (InfoSec) или корпоративного комплаенса, запрещающие конкретные ИИ-инструменты исключительно во избежание утечек данных).*
+2. **Причинение вреда:** Запрещается использовать Исходный Проект для создания вредоносного ПО, читов для мультиплеера, эксплойтов, а также для намеренной дискредитации или причинения вреда Лицензиару, Исходному Проекту или его сообществу.
+3. **Хищническая монетизация и Пейволлы:** Запрещается монетизировать Исходный Проект или Производный Проект (включая B2B-продажи и корпоративные лицензии) с помощью любых из следующих методов: продажа копий или лицензий за фиксированную цену, пейволлы, платные подписки для доступа/скачивания, любые формы рекламы (включая кросс-промоушен других коммерческих продуктов), обязательный сбор данных, продажа данных пользователей третьим лицам, или монетизация данных пользователей через рекламные сети, аналитику или API.
+   *(Исключение для Составных Проектов (Larger Works): Если ваш проект классифицируется как Составной Проект согласно п. 2.2.A, вам ПРЯМО РАЗРЕШАЕТСЯ коммерческая монетизация всего Составного Проекта в целом (например, продажа вашей проприетарной игры или софта), при условии, что Исходный Код конкретных FCAIL-компонентов остается публичным и полностью бесплатным. Сами FCAIL-компоненты прятать за пейволл запрещено).*
+   *(Исключение для Услуг и Донатов: Оказание сопутствующих платных услуг (например, платная техподдержка, консалтинг, заказная разработка) разрешено, при условии, что сам софт остается полностью бесплатным. Сбор добровольных пожертвований (например, через Patreon, Boosty) разрешен. Продажа коммерческого оборудования (железа) с предустановленным софтом в целях обхода данного пункта запрещена).*
+
+## 4. АННУЛИРОВАНИЕ И ПАТЕНТНАЯ ЗАЩИТА (TERMINATION)
+1. **Автоматическое аннулирование:** Если вы нарушаете любые условия данной Лицензии, ваши права прекращаются автоматически.
+2. **Период на исправление (Cure Period):** Однако, если вы прекратите все нарушения, ваша лицензия восстанавливается навсегда, если Лицензиар уведомит вас о нарушении (при условии, что это первое уведомление о нарушении от Лицензиара), и вы устраните нарушение в течение 30 дней после получения уведомления.
+3. **Последующие пользователи:** Аннулирование ваших прав не прекращает действие лицензий третьих лиц, получивших от вас копии или права в рамках данной Лицензии, при условии, что они сами полностью соблюдают её условия.
+4. **Патентная защита:** Если вы инициируете патентное судебное разбирательство против любого лица, утверждая, что Исходный Проект или Производный Проект нарушает патенты, то любые патентные лицензии, предоставленные вам по данной Лицензии, автоматически аннулируются с даты подачи такого иска.
+
+## 5. ОТКАЗ ОТ ГАРАНТИЙ И ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ
+ИСХОДНЫЙ ПРОЕКТ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ. НИ ПРИ КАКИХ ОБСТОЯТЕЛЬСТВАХ ЛИЦЕНЗИАР НЕ НЕСЕТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБЫЕ ИСКИ, УБЫТКИ ИЛИ ИНОЙ УЩЕРБ, ВОЗНИКАЮЩИЙ ИЗ ИЛИ В СВЯЗИ С ИСХОДНЫМ ПРОЕКТОМ.
+
+## 6. ЮРИСДИКЦИЯ И ЯЗЫК
+- **Применимое право:** Настоящая Лицензия регулируется законодательством юрисдикции, явно указанной оригинальным Лицензиаром в Исходном Проекте (например, в оригинальном файле NOTICE или README). Любое изменение, удаление или сокрытие этого указания последующими дистрибьюторами юридически ничтожно. Если оригинальный Лицензиар явно не указал юрисдикцию, применяется законодательство Российской Федерации без учета коллизионных норм.
+- **Правопреемство:** Никакая последующая версия данной Лицензии, опубликованная Лицензиаром или его правопреемниками, не может ретроактивно аннулировать права, уже предоставленные по более ранним версиям.
+- **Приоритет языка:** В случае возникновения конфликтов или разночтений между английской версией и любой переведенной версией (включая русскую) настоящей Лицензии, английская версия имеет преимущественную силу и обязательна к исполнению.

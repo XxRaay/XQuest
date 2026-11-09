@@ -41,12 +41,14 @@ function getAppIcon(): string {
   const candidates = [
     path.join(__dirname, '../public/icon.ico'),
     path.join(__dirname, '../dist/icon.ico'),
+    path.join(process.resourcesPath || '', 'icon.ico'),
+    path.join(process.resourcesPath || '', 'public/icon.ico'),
     path.join(__dirname, '../public/icon.png'),
     path.join(__dirname, '../dist/icon.png'),
     path.join(process.cwd(), 'public/icon.ico'),
     path.join(process.cwd(), 'public/icon.png'),
   ];
-  return candidates.find((p) => fs.existsSync(p)) || '';
+  return candidates.find((p) => p && fs.existsSync(p)) || '';
 }
 
 function createWindow(): void {
